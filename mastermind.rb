@@ -1,7 +1,7 @@
 class String
   def green; "\e[32m#{self}\e[0m" end
   def red;   "\e[31m#{self}\e[0m" end
-  def blue;           "\e[34m#{self}\e[0m" end
+  def blue; "\e[34m#{self}\e[0m" end
 end
 
 class Game
@@ -9,7 +9,7 @@ class Game
     @correct_num_position = 0
     @correct_num = 0
     @rounds = 0
-    @@valid_nums = [1, 2, 3, 4, 5, 6]
+    @valid_nums = [1, 2, 3, 4, 5, 6]
     instructions
     user_choice
   end
@@ -51,7 +51,7 @@ class Game
 
     while (@rounds <= 12)
       p combo # remove after debugging
-      
+
       # if user_combo.include?(@valid_nums)
       loop do
         puts "\nPlease enter a 4 digit combination (1-6)"
@@ -61,7 +61,7 @@ class Game
           puts "You cracked the code!"
           return
         end
-        
+
         for i in 0..combo.length - 1
           if user_combo[i].to_i == combo[i]
             @correct_num_position += 1
@@ -69,14 +69,14 @@ class Game
             @correct_num += 1
           end
       end
-          
+
         @correct_num_position.times do
           print "● ".green
         end
         @correct_num.times do
           print "○ "
         end
-      
+
         @correct_num_position = 0
         @correct_num = 0
         @rounds += 1
@@ -86,13 +86,6 @@ class Game
       # end
     end
   end
-
-
-  
-
-
-
-
 end
 # class Player
 
