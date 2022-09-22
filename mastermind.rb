@@ -1,4 +1,4 @@
-module GameHelpers
+module Instructions
   def intro
     puts 'Welcome to Mastermind! Ready for a code-breaking challenge?' \
     "\nTest the computer's code-breaking skills or your own." \
@@ -12,6 +12,18 @@ module GameHelpers
    "\t○ = Correct number but wrong position\n"
   end
 
+  def prompt_secret_code
+    puts 'Enter a 4 a digit code for the computer to guess:'
+  end
+
+  def prompt_game_choice
+    puts "\nEnter your choice: 1) Be a #{'CODE-MAKER'.red} 2) Be a " \
+    "#{'CODE-BREAKER'.blue}  "
+  end
+end
+
+module Feedback
+
   def clear_console
     sleep 1
     system('clear')
@@ -23,6 +35,16 @@ module GameHelpers
     end
     num.times do
       print '○ '
+    end
+  end
+
+  def check_combinations(user_combo, combo)
+    user_combo.each_index do |i|
+      if user_combo[i].to_i == combo[i]
+        @correct_num_position += 1
+      elsif combo.include?(user_combo[i])
+        @correct_num += 1
+      end
     end
   end
 end
@@ -50,19 +72,19 @@ class String
 end
 
 class Game
-  include GameHelpers
+  @@rounds = 1
+  include Instructions
+  include Feedback
   def initialize
     @comp = Computer.new
     @human = Human.new
     @correct_num_position = 0
     @correct_num = 0
-    @rounds = 1
     intro
   end
 
   def user_choice
-    puts "\nEnter your choice: 1) Be a #{'CODE-MAKER'.red} 2) Be a " \
-    "#{'CODE-BREAKER'.blue}  "
+    prompt_game_choice
     while true
       choice = gets.chomp.to_i
       break if choice.between?(1, 2)
@@ -92,8 +114,8 @@ class Game
   protected
 
   def codebreaker_loop(combo) # find a way to make this shorter
-    while @rounds <= 12
-      puts "\n\n#{'ROUND:'.magenta.bold} #{@rounds}"
+    while @@rounds <= 12
+      puts "\n\n#{'ROUND:'.magenta.bold} #{@@rounds}"
       user_combo = @human.prompt_user_combo
       if match?(@combo, user_combo)
         puts 'You cracked the code!'; return
@@ -111,7 +133,7 @@ class Game
   def codebreaker_play(user_combo, combo)
     check_combinations(user_combo, combo)
     display_feedback(@correct_num_position, @correct_num)
-    @rounds += 1
+    @@rounds += 1
     reset_counter
   end
 end
@@ -121,25 +143,15 @@ def reset_counter
   @correct_num = 0
 end
 
-def check_combinations(user_combo, combo)
-  user_combo.each_index do |i|
-    if user_combo[i].to_i == combo[i]
-      @correct_num_position += 1
-    elsif combo.include?(user_combo[i])
-      @correct_num += 1
-    end
-  end
-end
-
 def match?(user_combo, combo)
   true if user_combo == combo
 end
 
-def play_again?
+def play_again? # move to the GameHelpers module
   puts 'Play again? (Y/N)'
   input = gets.chomp.upcase
   if input == 'Y'
-    @rounds = 0
+    @@rounds = 0
     play
   end
   exit
@@ -165,12 +177,16 @@ class Human
 end
 
 # class Computer
-class Computer
+class Computer < Game
+  include Instructions
   attr_accessor :name
 
   def initialize
     @combo = []
     @name = 'Computer'
+    @correct_num_position = 0
+    @correct_num = 0
+    @received_feedback = []
   end
 
   def generate_combo
@@ -179,7 +195,32 @@ class Computer
     end
     @combo
   end
+
+  def codemaker_logic(combo)
+    comp_guess = 1122.to_s.split('').map!(&:to_i)
+    
+  end
+
+  def reset_counter
+    @correct_num_position = 0
+    @correct_num = 0
+  end
+
+  def secret_code
+    prompt_secret_code
+    gets.chomp.split('').map!(&:to_i)
+  end
+
+  def possible_combos
+    ([1, 2, 3, 4, 5, 6] * 4).combination(4).to_a.uniq.sort.map!(&:join)
+  end
+
+  def received_feedback
+    [@correct_num_position, @correct_num]
+  end
 end
 
-game = Game.new
-game.play
+# game = Game.new
+# game.play
+comp = Computer.new
+comp.codemaker_logic(1123)
