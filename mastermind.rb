@@ -254,28 +254,6 @@ class Computer
     end
     code
   end
-
-  def codemaker_logic(combo)
-    comp_guess = 1122.to_s.split('').map!(&:to_i)
-  end
-
-  def reset_counter
-    @correct_num_position = 0
-    @correct_num = 0
-  end
-
-  def secret_code
-    prompt_secret_code
-    gets.chomp.split('').map!(&:to_i)
-  end
-
-  def possible_combos
-    ([1, 2, 3, 4, 5, 6] * 4).combination(4).to_a.uniq.sort.map!(&:join)
-  end
-
-  def received_feedback
-    [@correct_num_position, @correct_num]
-  end
 end
 
 # main
