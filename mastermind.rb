@@ -34,7 +34,7 @@ module Display
   end
 
   def display_feedback(num_pos, num)
-    print 'Clues: '
+    puts 'Clues: '
     num_pos.times do
       print '● '.green
     end
@@ -74,7 +74,8 @@ end
 class Game
   include Display
   def initialize
-    @code_breaker = CodeBreaker.new
+    @codebreaker = CodeBreaker.new
+    @codemaker = CodeMaker.new
   end
 
   def user_choice
@@ -91,33 +92,77 @@ class Game
   def play
     intro
     choice = user_choice
+    clear_console
     case choice
     when 1
-      codemaker_play
+      @codemaker.play
     when 2
-      @code_breaker.play
+      @codebreaker.play
     end
+  end
+
+  def reset_feedback_counter
+    @correct_num_position = 0
+    @correct_num = 0
+  end
+
+  def display_round
+    puts "\n\n#{'ROUND:'.magenta.bold} #{@rounds}"
+  end
+
+  def valid_input?(input)
+    input.all? { |x| x.between?(1, 6) } && input.length == 4
   end
 end
 
-class CodeBreaker
+def result_message(result)
+  if result
+    puts "\nAmazing! You solved the secret code."
+  else
+    puts "\nYou lost :( The Secret Code was #{@secret_code.join(' ').green}"
+  end
+end
+
+class CodeBreaker < Game
   include Display
 
-  @@rounds = 1
   def initialize
     @human = Human.new
     @comp = Computer.new
     @win = false
     @correct_num_position = 0
     @correct_num = 0
+    @rounds = 1
   end
 
   def play
     @human.player_name
     @secret_code = @comp.generate_code
-    clear_console
-    play_loop
-    result_message
+    play_rounds
+    result_message(@win)
+  end
+
+  def play_rounds
+    while @rounds <= 12
+      display_round
+      user_guess = @human.prompt_user_guess
+      if valid_input?(user_guess)
+        return if win?(user_guess, @secret_code)
+
+        guess_comp_code(user_guess, @secret_code)
+      else
+        puts "\n Invalid input! Try again."
+      end
+    end
+  end
+
+  protected
+
+  def guess_comp_code(user_guess, secret_code)
+    check_guess(user_guess, secret_code)
+    display_feedback(@correct_num_position, @correct_num)
+    reset_feedback_counter
+    @rounds += 1
   end
 
   def check_guess(user_guess, combo)
@@ -130,83 +175,92 @@ class CodeBreaker
     end
   end
 
-  def play_loop
-    while @@rounds <= 12
-      display_round
-      user_guess = @human.prompt_user_guess
-      if valid_input?(user_guess)
-        return if win?(user_guess, @secret_code)
-
-        codebreaker_logic(user_guess, @secret_code)
-      else
-        puts "\n Invalid input! Try again."
-      end
-    end
-  end
-
-  protected
-
-  def reset_feedback_counter
-    @correct_num_position = 0
-    @correct_num = 0
-  end
-
-  def reset_rounds
-    @@rounds = 0
-  end
-
-  def codebreaker_logic(user_guess, secret_code)
-    check_guess(user_guess, secret_code)
-    display_feedback(@correct_num_position, @correct_num)
-    reset_feedback_counter
-    @@rounds += 1
-  end
-
-  def display_round
-    puts "\n\n#{'ROUND:'.magenta.bold} #{@@rounds}"
-  end
-
   def win?(user_guess, code)
     @win = user_guess == code
   end
-
-  def result_message
-    if @win
-      puts "\nAmazing! You solved the secret code."
-    else
-      puts "\nYou lost :( The Secret Code was #{@secret_code.join(' ').green}"
-    end
-  end
-
-  def valid_input?(input)
-    input.all? { |x| x.between?(1, 6) } && input.length == 4
-  end
 end
 
-class CodeMaker
+class CodeMaker < Game
   include Display
 
   def initialize
     @human = Human.new
-    @comp = Comp.new
+    @comp = Computer.new
     @correct_num_position = 0
     @correct_num = 0
     @possible_combos = ([1, 2, 3, 4, 5, 6] * 4).combination(4).to_a.uniq.sort
     @comp_feedback = []
-    @combo_feedback = []
+    @rounds = 1
+    @eliminated_combos = []
   end
 
   def play
     @human.player_name
-    secret_code = @human.prompt_secret_code
-    codemaker_logic(secret_code)
+    loop do
+      @secret_code = @human.prompt_secret_code
+      break if valid_input?(@secret_code)
+
+      puts 'Invalid input! Try again.'
+    end
+    @comp_guess = [1, 1, 2, 2]
+    guess_secret_code
+    puts "\nThe computer guessed your secret code! Secret code is #{@secret_code.join(' ').blue}"
   end
 
-  def codemaker_logic(secret_code)
+  protected
 
-
+  def guess_secret_code
+    while @comp_guess != @secret_code
+      display_round
+      display_computer_guess
+      comp_feedback
+      compare_feedbacks
+      remove_incorrect_combos
+      reassign_comp_guess
+      @rounds += 1
+      sleep 1.0
+    end
   end
 
+  def comp_feedback
+    @comp_guess.each_index do |i|
+      if @comp_guess[i] == @secret_code[i]
+        @correct_num_position += 1
+      elsif @comp_guess.include?(@secret_code[i])
+        @correct_num += 1
+      end
+    end
+    @comp_feedback = [@correct_num_position, @correct_num]
+    display_feedback(@correct_num_position, @correct_num)
+    reset_feedback_counter
+  end
+
+  def compare_feedbacks
+    @possible_combos.each do |combo|
+      combo.each_index do |i|
+        if combo[i] == @comp_guess[i]
+          @correct_num_position += 1
+        elsif @comp_guess.include?(combo[i])
+          @correct_num += 1
+        end
+      end
+      combo_feedback = [@correct_num_position, @correct_num]
+      @eliminated_combos << combo if @comp_feedback != combo_feedback
+      reset_feedback_counter
+    end
+  end
+
+  def remove_incorrect_combos
+    @possible_combos -= @eliminated_combos
+  end
+
+  def reassign_comp_guess
+    @comp_guess = @possible_combos.sample
+  end
+
+  def display_computer_guess
+    puts "#{"Computer's Guess:".blue} #{@comp_guess.join(' ')}"
+  end
 end
 
 class Human
@@ -228,23 +282,18 @@ class Human
   end
 
   def prompt_secret_code
-    puts "#{@name.red}, enter a 4 digit number for the computer to guess" \
-    '(between 1-6'
-    gets.chomp.split('').map(&:to_i)
+    puts "\n#{@name.red}, enter a 4 digit number for the computer to guess" \
+    ' (between 1-6)'
+    gets.chomp.split('').map!(&:to_i)
   end
 end
 
-# class Computer
 class Computer
   include Display
   attr_accessor :name
 
   def initialize
-    @combo = []
     @name = 'Computer'
-    @correct_num_position = 0
-    @correct_num = 0
-    @received_feedback = []
   end
 
   def generate_code
@@ -257,17 +306,25 @@ class Computer
 end
 
 # main
-def play_again?(game) # put outside of game class and into the main function
-  puts "\nPlay again? Enter 'Y' for Yes or any key to exit:"
-  input = gets.chomp.upcase
-  game.play if input == 'Y'
-  at_exit { puts 'Thank you for playing Mastermind!' }
+def play_again?
+  loop do
+    puts "\nPlay again? Enter 'Y' for Yes or any key to exit"
+    input = gets.chomp.upcase
+    while input == 'Y'
+      game = Game.new
+      game.play
+      break
+    end
+    break if input != 'Y'
+  end
+end
+
+def exit_game
+  at_exit { puts 'Thank you for playing Mastermind!'}
   exit
 end
 
 game = Game.new
 game.play
-play_again?(game)
-
-# comp = Computer.new
-# comp.codemaker_logic(1123)
+play_again?
+exit_game
