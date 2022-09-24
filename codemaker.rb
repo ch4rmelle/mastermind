@@ -2,6 +2,7 @@ require_relative 'display'
 require_relative 'colors'
 require_relative 'game'
 
+# codemaker gameplay
 class CodeMaker 
   include Display
 

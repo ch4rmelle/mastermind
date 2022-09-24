@@ -1,5 +1,6 @@
 require_relative 'display'
 
+# initialize computer class, generate a secret code
 class Computer
   include Display
   attr_accessor :name

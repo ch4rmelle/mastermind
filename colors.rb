@@ -1,3 +1,4 @@
+# modify string class to include colors
 class String
   def green
     "\e[32m#{self}\e[0m"

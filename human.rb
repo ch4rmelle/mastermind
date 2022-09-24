@@ -1,5 +1,5 @@
 require_relative 'display'
-
+# human class to store attributes and methods
 class Human
   include Display
   attr_accessor :name
