@@ -6,12 +6,13 @@ require_relative 'codemaker'
 require_relative 'display'
 require_relative 'colors'
 
-
 def play_again?
   loop do
     puts "\nPlay again? Enter 'Y' for Yes or any key to exit"
     input = gets.chomp.upcase
     while input == 'Y'
+      sleep 1
+      system('clear')
       game = Game.new
       game.play
       break
